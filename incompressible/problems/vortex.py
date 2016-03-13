@@ -33,9 +33,9 @@ def init_data(my_data, rp):
         msg.fail("ERROR: patch invalid in shear.py")
 
     # get the necessary runtime parameters
-    delta_s = rp.get_param("vortex.delta_s")
+    eps = rp.get_param("vortex.eps")
 
-    print('delta_s = ', delta_s)
+    print('eps = ', eps)
 
     # get the velocities
     u = my_data.get_var("x-velocity")
@@ -43,11 +43,30 @@ def init_data(my_data, rp):
 
     myg = my_data.grid
 
-    ran=1+delta_s*(np.random.rand(myg.qx,myg.qy)-0.5)
-    u.d[:,:] = -np.sin(2.0*math.pi*myg.x2d)*np.cos(2.0*math.pi*myg.y2d)*ran
-    ran=1+delta_s*(np.random.rand(myg.qx,myg.qy)-0.5)
-    v.d[:,:] = np.cos(2.0*math.pi*myg.x2d)*np.sin(2.0*math.pi*myg.y2d)*ran
+    u.d[:,:] = -np.sin(math.pi*myg.y2d)
+    v.d[:,:] = np.sin(math.pi*myg.x2d)
+    #u.d[:,:] = -np.sin(2.0*math.pi*myg.x2d)*np.cos(2.0*math.pi*myg.y2d)*ran
+    #v.d[:,:] = np.cos(2.0*math.pi*myg.x2d)*np.sin(2.0*math.pi*myg.y2d)*ran
 
+    if eps != 0.0:
+    #perturbed velocity1 at (0,0)
+      r2 = myg.x2d**2+myg.y2d**2
+      dvx1l = -eps**3*myg.y2d/r2*(1-np.exp(-r2/eps**2))
+      dvy1l = eps**3*myg.x2d/r2*(1-np.exp(-r2/eps**2))
+
+    #perturbed velocity1 at (2pi,0)
+      r2 = (myg.x2d - 2.0)**2+myg.y2d**2
+      dvx1r = -eps**3*myg.y2d/r2*(1-np.exp(-r2/eps**2))
+      dvy1r = eps**3*(myg.x2d-2.0)/r2*(1-np.exp(-r2/eps**2))
+
+
+    #perturbed velocity2 at (pi,0)
+      r2 = (myg.x2d - 1.0)**2+myg.y2d**2
+      dvx2 = eps**3*myg.y2d/r2*(1-np.exp(-r2/eps**2))
+      dvy2 = -eps**3*(myg.x2d-1.0)/r2*(1-np.exp(-r2/eps**2))
+
+      u.d[:,:] = u.d[:,:] + dvx1l + dvx1r + dvx2
+      v.d[:,:] = v.d[:,:] + dvy1l + dvy1r + dvy2
 
     print("extrema: ", u.min(), u.max())
 

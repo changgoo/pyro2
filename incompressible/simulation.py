@@ -410,22 +410,40 @@ class Simulation(NullSimulation):
 
         myg = self.cc_data.grid
 
+        w0 = myg.scratch_array()
+        gw0 = myg.scratch_array()
         vort = myg.scratch_array()
         divU = myg.scratch_array()
+        gradw = myg.scratch_array()
+
+        w0 = np.pi*np.cos(np.pi*myg.x2d)+np.pi*np.cos(np.pi*myg.y2d)
+        gw0 = np.sqrt(np.pi**4*np.sin(np.pi*myg.x2d)**2+np.pi**4*np.sin(np.pi*myg.y2d)**2)
 
         vort.v()[:,:] = \
              0.5*(v.ip(1) - v.ip(-1))/myg.dx - \
              0.5*(u.jp(1) - u.jp(-1))/myg.dy
 
+        vort -= w0
+
         divU.v()[:,:] = \
             0.5*(u.ip(1) - u.ip(-1))/myg.dx + \
             0.5*(v.jp(1) - v.jp(-1))/myg.dy
 
+        gradw.v()[:,:] = np.sqrt(\
+             ((v.ip(1) - 2.0*v.v() + v.ip(-1))/myg.dx**2 - \
+              0.25*(u.ip_jp(1,1) - u.ip_jp(-1,1) - \
+                    u.ip_jp(1,-1) + u.ip_jp(-1,-1))/(myg.dx*myg.dy))**2 + \
+             ((u.jp(1) - 2.0*u.v() + u.jp(-1))/myg.dy**2 - \
+              0.25*(v.ip_jp(1,1) - v.ip_jp(-1,1) - \
+                    v.ip_jp(1,-1) + v.ip_jp(-1,-1))/(myg.dx*myg.dy))**2)
+
+        gradw -= gw0
+
         fig, axes = plt.subplots(nrows=2, ncols=2, num=1)
         plt.subplots_adjust(hspace=0.25)
 
-        fields = [u, v, vort, divU]
-        field_names = ["u", "v", r"$\nabla \times U$", r"$\nabla \cdot U$"]
+        fields = [u, v, vort, gradw]
+        field_names = ["u", "v", r"$\nabla \times U$", r"$|\nabla \omega|$"]
 
         for n in range(4):
             ax = axes.flat[n]
@@ -435,8 +453,8 @@ class Simulation(NullSimulation):
                             interpolation="nearest", origin="lower",
                             extent=[myg.xmin, myg.xmax, myg.ymin, myg.ymax])
 
-            ax.set_xlabel("x")
-            ax.set_ylabel("y")
+            ax.set_xlabel(r"$x$")
+            ax.set_ylabel(r"$y$")
             ax.set_title(field_names[n])
 
             plt.colorbar(img, ax=ax)

@@ -1,1 +1,1 @@
-__all__ = ['shear', 'converge']
+__all__ = ['shear', 'converge','vortex']
